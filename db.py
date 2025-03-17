@@ -3,6 +3,7 @@ from sentence_transformers import SentenceTransformer
 from typing import List
 from preprocess import generate_chunks
 import hashlib
+import re
 
 # Set up chroma client
 client = chromadb.PersistentClient()
@@ -18,12 +19,11 @@ collection = client.get_or_create_collection(
     embedding_function=CustomEmbeddingFunction()
 )
 
-def generate_id (text, index):
+def generate_id(text, index):
     hash_value = hashlib.md5(text.encode()).hexdigest()[:8]
     return f"chunk_{index}_{hash_value}"
 
 def is_chunk_already_stored(chunk_id):
-    """Check if a chunk is already in ChromaDB."""
     existing = collection.get(ids=[chunk_id])
     return len(existing["ids"]) > 0
 
@@ -43,17 +43,19 @@ def add_to_db(chunks):
             print(f"Chunk {i} already stored in ChromaDB")
 
 # Generate context for chatbot to use
-def generate_context (query):
+def generate_context(query):
     result = collection.query(
         query_texts=[query],
         n_results=5
     )
-    retrieved_texts = result["documents"][0] if "documents" in result else []
-    print("CONTEXT PROVIDED:\n", retrieved_texts, "\n\n")
-    # Format context as a single string
-    context = "\n\n".join(retrieved_texts)  
 
-    return context
+    retrieved_texts = result["documents"][0] if "documents" in result else []
+    retrieved_metadata = result["metadatas"][0] if "metadatas" in result else []
+
+    print("CONTEXT PROVIDED:\n", retrieved_texts, "\n\n")
+    print("METADATA:\n", retrieved_metadata, "\n\n")
+
+    return "\n\n".join(retrieved_texts)
 
 print("Generating chunks...")
 chunks = generate_chunks("monopoly.pdf")
