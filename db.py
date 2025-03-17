@@ -1,7 +1,8 @@
 import chromadb
-from preprocess import generate_id
 from sentence_transformers import SentenceTransformer
 from typing import List
+from preprocess import generate_chunks
+import hashlib
 
 # Set up chroma client
 client = chromadb.PersistentClient()
@@ -16,6 +17,10 @@ collection = client.get_or_create_collection(
     name="monopoly",
     embedding_function=CustomEmbeddingFunction()
 )
+
+def generate_id (text, index):
+    hash_value = hashlib.md5(text.encode()).hexdigest()[:8]
+    return f"chunk_{index}_{hash_value}"
 
 def is_chunk_already_stored(chunk_id):
     """Check if a chunk is already in ChromaDB."""
@@ -49,3 +54,9 @@ def generate_context (query):
     context = "\n\n".join(retrieved_texts)  
 
     return context
+
+print("Generating chunks...")
+chunks = generate_chunks("monopoly.pdf")
+print("Adding chunks to ChromaDB...")
+add_to_db(chunks)
+print("Done!")

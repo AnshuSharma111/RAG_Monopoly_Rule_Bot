@@ -1,24 +1,15 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import fitz
+from pdf2image import convert_from_path
+import pytesseract
 import re
-import hashlib
 
-def extract_text_from_pdf(path):
-    doc = fitz.open(path)
-    raw_text = "\n".join([page.get_text("text") for page in doc])
+def extract_text_from_pdf (pdf_path):
+    # Convert PDF pages to images
+    images = convert_from_path(pdf_path)
 
-    # Normalize spaces & remove broken hyphenation
-    clean_text = raw_text.replace(" -\n", "").replace("\n", " ")
-    return " ".join(clean_text.split())  # Remove extra spaces
-
-def get_pdf_metadata (path):
-    doc = fitz.open(path)
-    metadata = doc.metadata
-    return metadata
-
-def generate_id (text, index):
-    hash_value = hashlib.md5(text.encode()).hexdigest()[:8]
-    return f"chunk_{index}_{hash_value}"
+    # Extract text using Tesseract OCR
+    ocr_text = "\n".join(pytesseract.image_to_string(img) for img in images)
+    return ocr_text
 
 def generate_chunks (path):
     # Extract text from PDF
@@ -41,6 +32,3 @@ def generate_chunks (path):
         chunks.extend(recursive_splitter.split_text(section))
 
     return chunks
-
-chunks = generate_chunks("monopoly.pdf")
-print(chunks)

@@ -1,33 +1,9 @@
-from db import generate_context, add_to_db
-from preprocess import generate_chunks
-import chromadb
-from sentence_transformers import SentenceTransformer
-from typing import List
+from db import generate_context
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 import os
 load_dotenv()
-
-
-# Set up chroma client
-client = chromadb.PersistentClient()
-
-# create collection using multi-qa-mpnet-base-dot-v1 as the embedding model
-embedding_model = SentenceTransformer("multi-qa-mpnet-base-dot-v1")
-class CustomEmbeddingFunction:
-    def __call__(self, input: List[str]) -> List[List[float]]:
-        return embedding_model.encode(input).tolist()
-
-collection = client.get_or_create_collection(
-    name="monopoly",
-    embedding_function=CustomEmbeddingFunction()
-)
-
-# Add chunks (if not already added)
-path = "monopoly.pdf"
-chunks = generate_chunks(path)
-add_to_db(chunks)
 
 # Gemini API
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
